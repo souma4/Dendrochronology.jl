@@ -16,7 +16,7 @@ DendroTable(Years,
 )
 ```
 """
-struct DendroTable{Y::AbstractVector{Int},T} <: AbstractDendroTable
+struct DendroTable{Y::Union{UnitRange, AbstractVector{Int}},T} <: AbstractDendroTable
   Years::Y
   values::Dict{Int,T}
 end

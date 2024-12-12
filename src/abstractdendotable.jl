@@ -3,23 +3,23 @@
 # -------------------------------------------------------------------
 
 """
-    AbstractDendroTable
+    AbstractRWLTable
 
     Implements the [`Year`](@ref) trait together with tables
     of values for years.
         """
-abstract type AbstractDendroTable end 
+abstract type AbstractRWLTable end
 
 """
-years(dendrotable)
+years(rwltable)
 
-return underlying years of the `dendrotable`.
+return underlying years of the `rwltable`.
 """
 function years end
 
 """
-values(dendrotable)
-returns the values of the dendrotable
+values(rwltable)
+returns the values of the rwltable
 """
 values
 
@@ -27,86 +27,86 @@ values
 # FALLBACKS
 # ---------
 
-function Base.:(==)(dendrotable₁::AbstractDendroTable, dentable₂::AbstractDendroTable)
-    #same years
-    if years(dendrotable₁) != years(dendrotable₂)
-        return false
-    end
+function Base.:(==)(rwltable₁::AbstractRWLTable, dentable₂::AbstractRWLTable)
+  #same years
+  if years(rwltable₁) != years(rwltable₂)
+    return false
+  end
 
-    # same values
-    for rank in 0:paramdim(years(dendrotable₁))
-        vals₁ = values(dendrotable₁, rank)
-        vals₂ = values(dendrotable₂, rank)
-        if !isequal(vals₁, vals₂)
-            return false
-        end
+  # same values
+  for rank in 0:paramdim(years(rwltable₁))
+    vals₁ = values(rwltable₁, rank)
+    vals₂ = values(rwltable₂, rank)
+    if !isequal(vals₁, vals₂)
+      return false
     end
+  end
 
-    true
+  true
 end
 
 
-Base.view(dendrotable::AbstractDendroTable, inds::AbstractVector{Int}) = SubDendroTable(dendrotable, inds)
+Base.view(rwltable::AbstractRWLTable, inds::AbstractVector{Int}) = SubRWLTable(rwltable, inds)
 
-Base.parent(dendrotable::AbstractDendroTable) = dendrotable
+Base.parent(rwltable::AbstractRWLTable) = rwltable
 
-Base.parentindices(dendrotable::AbstractDendroTable) = 1:nrow(dendrotable)
+Base.parentindices(rwltable::AbstractRWLTable) = 1:nrow(rwltable)
 
 # -----------
 # IO METHODS
 # -----------
 
-function Base.summary(io::IO, dendrotable::AbstractDendroTable)
-  yr = yrs(dendrotable)
-  name = nameof(typeof(dendrotable))
-  print(io, "$(nrow(dendrotable))×$(ncol(dendrotable)) $name over $yr")
+function Base.summary(io::IO, rwltable::AbstractRWLTable)
+  yr = yrs(rwltable)
+  name = nameof(typeof(rwltable))
+  print(io, "$(nrow(rwltable))×$(ncol(rwltable)) $name over $yr")
 end
 
 
-function Base.show(io::IO, ::MIME"text/plain", dendrotable::AbstractDendroTable)
+function Base.show(io::IO, ::MIME"text/plain", rwltable::AbstractRWLTable)
   fcolor = crayon"bold teal"
   gcolor = crayon"bold (0,128,128)"
-  hcolors = [fill(fcolor, ncol(dendrotable) - 1); gcolor]
+  hcolors = [fill(fcolor, ncol(rwltable) - 1); gcolor]
   pretty_table(
     io,
-    dendrotable;
+    rwltable;
     backend=Val(:text),
-    _common_kwargs(dendrotable)...,
+    _common_kwargs(rwltable)...,
     header_crayon=hcolors,
     newline_at_end=false
   )
 end
 
-function Base.show(io::IO, ::MIME"text/html", dendrotable::AbstractDendroTable)
-  pretty_table(io, dendrotable; backend=Val(:html), _common_kwargs(dendrotable)..., max_num_of_rows=10)
+function Base.show(io::IO, ::MIME"text/html", rwltable::AbstractRWLTable)
+  pretty_table(io, rwltable; backend=Val(:html), _common_kwargs(rwltable)..., max_num_of_rows=10)
 end
 
-function _common_kwargs(dendrotable)
-    yr = years(dendrotable)
-    tab = values(dendrotable)
-    names = propertynames(dendrotable)
-  
-    # header
-    header = string.(names)
-  
-    # subheaders
-    tuples = map(names) do name
+function _common_kwargs(rwltable)
+  yr = years(rwltable)
+  tab = values(rwltable)
+  names = propertynames(rwltable)
 
-        cols = Tables.columns(tab)
-        x = Tables.getcolumn(cols, name)
-        T = eltype(x)
-        if T <: Missing
-          header₁ = "Missing"
-          header₂ = "[NoUnits]"
-        else
-          S = nonmissingtype(T)
-          header₁ = string(nameof(scitype(S)))
-          header₂ = S <: AbstractQuantity ? "[$(unit(S))]" : "[NoUnits]"
-      end
-      header₁, header₂
+  # header
+  header = string.(names)
+
+  # subheaders
+  tuples = map(names) do name
+
+    cols = Tables.columns(tab)
+    x = Tables.getcolumn(cols, name)
+    T = eltype(x)
+    if T <: Missing
+      header₁ = "Missing"
+      header₂ = "[NoUnits]"
+    else
+      S = nonmissingtype(T)
+      header₁ = string(nameof(scitype(S)))
+      header₂ = S <: AbstractQuantity ? "[$(unit(S))]" : "[NoUnits]"
     end
-    subheader₁ = first.(tuples)
-    subheader₂ = last.(tuples)
-  
-    (title=summary(dendrotable), header=(header, subheader₁, subheader₂), alignment=:c, vcrop_mode=:bottom)
+    header₁, header₂
   end
+  subheader₁ = first.(tuples)
+  subheader₂ = last.(tuples)
+
+  (title=summary(rwltable), header=(header, subheader₁, subheader₂), alignment=:c, vcrop_mode=:bottom)
+end

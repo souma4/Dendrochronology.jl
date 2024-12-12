@@ -4,7 +4,7 @@
 
 
 """
-    dendroref(table, dendro)
+    dendroref(table, years)
 
 Dendroreference `table` on `years`
 
@@ -14,7 +14,7 @@ Dendroreference `table` on `years`
 julia> dendroref((w=rand(30),l=rand(30)),1980:2010)
 ```
 """
-dendroref(table, years::AbstractVector{Int}) = DendroTable(table, years)
+dendroref(table, years::AbstractVector{Int}) = RWLTable(table, years)
 
 
 
@@ -27,7 +27,7 @@ dendroref(table, names::NTuple{N,<:AbstractString}; kwargs...) where {N} =
 # HELPERS
 # ---------
 
- #add unit or convert to chosen unit
+#add unit or convert to chosen unit
 withunit(x::Number, u) = x * u
 withunit(x::Quantity, u) = uconvert(u, x)
 

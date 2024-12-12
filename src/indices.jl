@@ -3,10 +3,10 @@
 # -------------------------------------------------------------------
 
 
-partitioninds(rng::AbstractRNG, dendrotable::AbstractDendroTable, method::PartitionMethod) =
-  partitioninds(rng, years(dendrotable), method)
+partitioninds(rng::AbstractRNG, rwltable::AbstractRWLTable, method::PartitionMethod) =
+  partitioninds(rng, years(rwltable), method)
 
-sampleinds(rng::AbstractRNG, dendrotable::AbstractDendroTable, method::DiscreteSamplingMethod) =
-  sampleinds(rng, years(dendrotable), method)
+sampleinds(rng::AbstractRNG, rwltable::AbstractRWLTable, method::DiscreteSamplingMethod) =
+  sampleinds(rng, years(rwltable), method)
 
-sortinds(dendrotable::AbstractDendroTable, method::SortingMethod) = sortinds(years(dendrotable), method)
+sortinds(rwltable::AbstractRWLTable, method::SortingMethod) = sortinds(years(rwltable), method)

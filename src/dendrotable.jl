@@ -4,37 +4,36 @@
 
 
 """
-    DendroTable(years, values)
+    RWLTable(years, values)
 
-`years` together with a dictionary of dendroable `values`.
+`years` together with a dictionary of RWLTable (ring-width-length) `values`.
 ## Examples
 
 ```julia
 # attach ring-width and length to years
-DendroTable(Years,
+RWLTable(Years,
   Dict(2 => (width=rand(100), length=rand(100)))
 )
 ```
 """
-struct DendroTable{Y::Union{UnitRange, AbstractVector{Int}},T} <: AbstractDendroTable
+struct RWLTable{Y::Union{UnitRange,AbstractVector{Int}},T} <: AbstractRWLTable
   Years::Y
   values::Dict{Int,T}
 end
 
 # getters
-getyears(gtb::DendroTable) = getfield(gtb, :Years)
-getvalues(gtb::DendroTable) = getfield(gtb, :values)
+getyears(gtb::RWLTable) = getfield(gtb, :Years)
+getvalues(gtb::RWLTable) = getfield(gtb, :values)
 
 # ----------------------------
 # ABSTRACT GEOTABLE INTERFACE
 # ----------------------------
 
-years(dendrotable::DendroTable) = getyears(dendrotable)
+years(rwltable::RWLTable) = getyears(rwltable)
 
-function Base.values(dendrotable::DendroTable, rank=nothing)
-  years = getyears(dendrotable)
-  values = getvalues(dendrotable)
+function Base.values(rwltable::RWLTable, rank=nothing)
+  years = getyears(rwltable)
+  values = getvalues(rwltable)
   r = isnothing(rank) ? paramdim(years) : rank
   get(values, r, nothing)
 end
-

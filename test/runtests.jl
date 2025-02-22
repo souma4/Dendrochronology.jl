@@ -22,12 +22,6 @@ using TestItemRunner
 
   # float settings
   T = if isCI
-    if ENV["FLOAT_TYPE"] == "Float32"
-      Float32
-    elseif ENV["FLOAT_TYPE"] == "Float64"
-      Float64
-    end
-  else
     Float64
   end
 

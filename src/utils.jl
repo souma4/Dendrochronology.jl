@@ -28,8 +28,8 @@ function get_format(ext::String)::FileFormat
     return Tucson()
   elseif ext == ".csv"
     return _dendroCSV()
-  elseif ext == ".tridas"
-    return Tridas()
+    # elseif ext == ".tridas"
+    #   return Tridas()
   else
     error("Unsupported file format: $ext")
   end
@@ -129,6 +129,47 @@ function _fix_names(col_names, name_width, mapping_fname, mapping_append; basic_
         end
       end
     end
+  end
+  return y
+end
+
+function _csv2rwl(fname, kwargs...)
+  nameCheck = values(CSV.File(fname; header=false, limit=1)[1])
+  if any(_nonunique(nameCheck))
+    warn_fmt = "Duplicated series ID detected: "
+    ids_dup = join(nameCheck[findall(_nonunique(nameCheck))], "; ")
+    error(warn_fmt * ids_dup)
+  else
+    dat = CSV.File(fname; header=true, kwargs...)
+    rownames = [dat[i][1] for i in 1:size(dat, 1)]
+    colnames = keys(dat[1])
+    # loop through the rows and add to matrix
+    matrix = zeros(Float64, size(dat, 1), length(colnames) - 1)
+    for i in 1:size(dat, 1)
+      for j in 2:length(colnames)
+        l_dat = dat[i][j]
+        # if NA set to 0
+        if l_dat == "NA"
+          matrix[i, j-1] = 0.0
+        elseif typeof(l_dat) <: AbstractString
+          matrix[i, j-1] = parse(Float64, l_dat)
+        elseif typeof(l_dat) <: Integer
+          matrix[i, j-1] = Float64(l_dat)
+        else
+          matrix[i, j-1] = l_dat
+        end
+      end
+    end
+
+    RWLTable(matrix, rownames, colnames[2:end])
+  end
+end
+
+function _nonunique(x::AbstractVector)
+  n = length(x)
+  y = falses(n)
+  for i in 1:n
+    y[i] = sum(any(x .== x[i])) > 1
   end
   return y
 end

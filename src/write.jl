@@ -9,6 +9,7 @@
 # struct Tridas <: FileFormat end
 
 include("write/Tucson.jl")
+include("write/CSV.jl")
 
 
 

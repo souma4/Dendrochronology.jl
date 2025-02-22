@@ -1,4 +1,6 @@
-
+# -------------------------------------------------------------------
+# Licensed under the GPL-3.0 License. See LIENSE in the project root.
+# -------------------------------------------------------------------
 
 """
   read(fname::Tucson; header::Union{Nothing,Bool}=nothing, long::Bool=false, edge_zeros::Bool=true, verbose::Bool=true)

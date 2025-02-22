@@ -13,6 +13,7 @@ struct _dendroCSV <: FileFormat end
 struct Tucson <: FileFormat end
 struct Tridas <: FileFormat end
 include("read/Tucson.jl")
+include("read/CSV.jl")
 
 """
   read(filename::String)::String

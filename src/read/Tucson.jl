@@ -115,7 +115,7 @@ function Base.read(ftype::Tucson, fname::String; header::Union{Nothing,Bool}=not
           is_head = true
         else
           datacheck = tryparse.(Int, datacheck)
-          if any(d -> d === nothing || d != round(d), datacheck)
+          if any(d -> (d === nothing) || (d != round(d)), datacheck)
             is_head = true
           end
         end
@@ -127,7 +127,7 @@ function Base.read(ftype::Tucson, fname::String; header::Union{Nothing,Bool}=not
         hdr1_split = hdr1_split[2:end]
         if !any(occursin(r"[a-zA-Z]", part) for part in hdr1_split)
           yrdatacheck = tryparse.(Int, hdr1_split)
-          if !(any(d -> d === nothing || d != round(d), yrdatacheck))
+          if !(any(d -> (d === nothing) || (d != round(d)), yrdatacheck))
             is_head = false
           end
         end
@@ -232,7 +232,7 @@ function Base.read(ftype::Tucson, fname::String; header::Union{Nothing,Bool}=not
     if !(prec_rproc[i] in [100, 1000])
       these_rows = findall(isequal(i), series_index)
       these_decades = decade_yr[these_rows]
-      has_stop = findlast(extra_col[these_rows] .== 999 .|| extra_col[these_rows] .== -9999)
+      has_stop = findlast((extra_col[these_rows] .== 999) .|| (extra_col[these_rows] .== -9999))
       if !isnothing(has_stop) && argmax(these_decades) == has_stop
         @warn "bad location of stop marker in series $(series_ids[i])"
         prec_rproc[i] = extra_col[these_rows[has_stop]] == 999 ? 100 : 1000
@@ -265,7 +265,7 @@ function Base.read(ftype::Tucson, fname::String; header::Union{Nothing,Bool}=not
         these_rows = findall(isequal(this_series), series_index)
         last_row = these_rows[end]
         next_series = series_united[series_index[last_row+1]]
-        if last_row == length(series) || upper_ids[this_series] != upper_ids[next_series]
+        if (last_row == length(series)) || (upper_ids[this_series] != upper_ids[next_series])
           new_united = false
           break
         end

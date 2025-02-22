@@ -4,11 +4,11 @@
 
 
 """
-    SubRWLTable(rwltable, inds)
+  SubRWLTable(rwltable, inds)
 
 Return a view of `rwltable` at indices `inds`.
 """
-struct SubRWLTable{T<:AbstractRWLTable,I<:AbstractVector{Int}} <: AbstractRWLTable
+struct SubRWLTable{T<:RWLTable,I<:AbstractVector{Int}}
   rwltable::T
   inds::I
 end
@@ -33,13 +33,10 @@ end
 function Base.values(v::SubRWLTable, rank=nothing)
   rwltable = getdendrotable(v)
   inds = getinds(v)
-  dim = paramdim(years(rwltable))
-  r = isnothing(rank) ? dim : rank
-  table = values(rwltable, r)
-  if r == dim && !isnothing(table)
-    Tables.subset(table, inds)
+  if isnothing(rank)
+    view(values(rwltable), inds)
   else
-    nothing
+    view(values(rwltable, rank), inds)
   end
 end
 

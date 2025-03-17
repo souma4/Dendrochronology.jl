@@ -6,7 +6,7 @@
 """
   Base.read(format::_dendroCSV, fname::String; kwargs...)
 
-Reads a CSV file and converts it to an RWLTable format.
+Reads a CSV file and converts it to an TimeArray format.
 
 # Arguments
 - `format::dendroCSV`: A custom format type for dendrochronology CSV files.
@@ -14,7 +14,7 @@ Reads a CSV file and converts it to an RWLTable format.
 - `kwargs...`: Additional keyword arguments to pass to the CSV reader.
 
 # Returns
-- An `RWLTable` object containing the data from the CSV file.
+- An `TimeArray` object containing the data from the CSV file.
 
 # Raises
 - `ErrorException`: If duplicated series IDs are detected in the CSV file.

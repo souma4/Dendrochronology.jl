@@ -3,7 +3,7 @@
 # -------------------------------------------------------------------
 # using CSV
 """
-FTYPE = Union{Tucson, Compact}
+FTYPE = Union{Tucson, CSV}
 
 parent type of all available file types
 """

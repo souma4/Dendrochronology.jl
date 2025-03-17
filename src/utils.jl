@@ -1,3 +1,6 @@
+# -------------------------------------------------------------------
+# Licensed under the GPL-3.0 License. See LICENSE in the project root.
+# -------------------------------------------------------------------
 include("utils/readloop.jl")
 INT_MAX = typemax(Int)
 INT_MIN = typemin(Int)
@@ -144,13 +147,13 @@ function _csv2rwl(fname, kwargs...)
     rownames = [dat[i][1] for i in 1:size(dat, 1)]
     colnames = keys(dat[1])
     # loop through the rows and add to matrix
-    matrix = zeros(Float64, size(dat, 1), length(colnames) - 1)
+    matrix = fill(NaN, size(dat, 1), length(colnames) - 1)
     for i in 1:size(dat, 1)
       for j in 2:length(colnames)
         l_dat = dat[i][j]
         # if NA set to 0
         if l_dat == "NA"
-          matrix[i, j-1] = 0.0
+          matrix[i, j-1] = NaN
         elseif typeof(l_dat) <: AbstractString
           matrix[i, j-1] = parse(Float64, l_dat)
         elseif typeof(l_dat) <: Integer
@@ -161,7 +164,7 @@ function _csv2rwl(fname, kwargs...)
       end
     end
 
-    RWLTable(matrix, rownames, colnames[2:end])
+    TimeArray(Date.(rownames), matrix, colnames[2:end])
   end
 end
 

@@ -3,7 +3,7 @@
 # -------------------------------------------------------------------
 
 """
-  write(format::Tucson, fname::String, rwl_table::RWLTable; header=nothing, append=false, prec=0.01,
+  write(format::Tucson, fname::String, rwl_table::TimeArray; header=nothing, append=false, prec=0.01,
      mapping_fname="", mapping_append=false, long_names=true)
 
 Write the given `rwl_table` to a file in the Tucson format.
@@ -11,7 +11,7 @@ Write the given `rwl_table` to a file in the Tucson format.
 # Arguments
 - `format::Tucson`: The format in which to write the file.
 - `fname::String`: The name of the file to write.
-- `rwl_table::RWLTable`: The table containing the ring width data to write.
+- `rwl_table::TimeArray`: The table containing the ring width data to write.
 
 # Keyword Arguments
 - `header`: Optional header information to include in the file. Default is `nothing`.
@@ -22,11 +22,11 @@ Write the given `rwl_table` to a file in the Tucson format.
 - `long_names::Bool`: Whether to use long names in the file. Default is `true`.
 
 # Example
-# Write the RWLTable to a file in Tucson format
+# Write the TimeArray to a file in Tucson format
 write(Tucson(), "output.tuc", rwl_table; kwargs...)
 
 """
-function Base.write(format::Tucson, fname::String, rwl_table::RWLTable; header=nothing, append=false, prec=0.01,
+function Base.write(format::Tucson, fname::String, rwl_table::TimeArray; header=nothing, append=false, prec=0.01,
   mapping_fname="", mapping_append=false, long_names=true)
   line_term = "\r\n"  # CR+LF, ASCII carriage return and line feed
 
@@ -97,7 +97,7 @@ function Base.write(format::Tucson, fname::String, rwl_table::RWLTable; header=n
 
   nseries = size(rwl_df, 2)
   yrs_all = collect(years(rwl_table))
-  col_names = names(rwl_table)
+  col_names = colnames(rwl_table)
 
   yrs_order = sortperm(yrs_all)
   yrs_all = yrs_all[yrs_order]

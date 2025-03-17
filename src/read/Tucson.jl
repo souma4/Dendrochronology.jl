@@ -91,7 +91,7 @@ function Base.read(ftype::Tucson, fname::String; header::Union{Nothing,Bool}=not
   # parse out the whitespace and convert to vector of strings
   good_lines = [split(strip(x)) for x in good_lines]
 
-  if header === nothing
+  if isnothing(header)
     hdr1 = good_lines[1]
     if length(hdr1) == 0
       error("file is empty")
@@ -102,7 +102,7 @@ function Base.read(ftype::Tucson, fname::String; header::Union{Nothing,Bool}=not
 
     is_head = false
     yrcheck = tryparse(Int, hdr1[2])
-    if yrcheck === nothing || yrcheck < -1e4 || yrcheck > 1e4 || yrcheck != round(yrcheck)
+    if isnothing(yrcheck) || yrcheck < -1e4 || yrcheck > 1e4 || yrcheck != round(yrcheck)
       is_head = true
     end
     if !is_head
@@ -221,10 +221,10 @@ function Base.read(ftype::Tucson, fname::String; header::Union{Nothing,Bool}=not
   int_mat, min_year, prec_rproc = readloop(series_index, decade_yr, x)
 
 
-  rw_mat = fill(AbstractFloat(0.0), size(int_mat))
+  rw_mat = fill(NaN, size(int_mat))
   span = size(rw_mat, 1)
   if span == 0
-    rw_df = RWLTable(rw_mat, collect(1:span) .+ min_year .- 1, Symbol.(series_ids))
+    rw_df = TimeArray(rw_mat, collect(1:span) .+ min_year .- 1, Symbol.(series_ids))
     return rw_df
   end
   max_year = min_year + (span - 1)
@@ -249,8 +249,8 @@ function Base.read(ftype::Tucson, fname::String; header::Union{Nothing,Bool}=not
       prec_unknown[i] = true
     end
     t_col = int_mat[:, i]
-    # convert to missing if the value is NA_INT
-    rw_mat[:, i] .= ifelse.(t_col .== NA_INT, 0.0, t_col) ./ this_prec_rproc
+    # convert to NaN if the value is NA_INT
+    rw_mat[:, i] .= ifelse.(t_col .== NA_INT, NaN, t_col) ./ this_prec_rproc
   end
 
   if all(prec_unknown)
@@ -277,9 +277,9 @@ function Base.read(ftype::Tucson, fname::String; header::Union{Nothing,Bool}=not
           val_count = zeros(Int, span)
           this_col = rw_mat[:, this_series]
           next_col = rw_mat[:, next_series]
-          flag_this = .!isnothing(this_col) .& this_col .!= 0
+          flag_this = .!isnothing(this_col) .& .!isnan.(this_col)
           val_count[flag_this] .= 1
-          flag_next = .!isnothing(next_col) .& next_col .!= 0
+          flag_next = .!isnothing(next_col) .& .!isnan.(next_col)
           val_count[flag_next] .+= 1
           if any(val_count .> 1)
             new_united = false
@@ -313,7 +313,7 @@ function Base.read(ftype::Tucson, fname::String; header::Union{Nothing,Bool}=not
     end
   end
 
-  the_range = hcat([findall(x -> x != 0, rw_mat[:, i])[1] for i in 1:size(rw_mat, 2)], [findall(x -> x != 0, rw_mat[:, i]) |> last for i in 1:size(rw_mat, 2)])
+  the_range = hcat([findfirst(x -> !isnan(x), rw_mat[:, i]) for i in 1:size(rw_mat, 2)], [findlast(x -> !isnan(x), rw_mat[:, i]) for i in 1:size(rw_mat, 2)])
   series_min = the_range[:, 1]
   series_max = the_range[:, 2]
   good_series = .!isnan.(series_min)
@@ -324,6 +324,6 @@ function Base.read(ftype::Tucson, fname::String; header::Union{Nothing,Bool}=not
   incl_rows = (minimum(series_min[good_series])):(maximum(series_max[good_series]))
   rw_mat = rw_mat[incl_rows, :]
 
-  rownames = collect(incl_rows .+ min_year .- 1)
-  RWLTable(rw_mat, rownames, Symbol.(series_ids))
+  Years = collect(incl_rows .+ min_year .- 1)
+  TimeArray(Date.(Years), rw_mat, Symbol.(series_ids))
 end

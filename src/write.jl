@@ -14,20 +14,20 @@ include("write/CSV.jl")
 
 
 """
-  write(file::String, data <: RWLTable)
+  write(file::String, data <: TimeArray)
 
 write Ring-Width-Length table to specified file format.
 
 # Arguments
 - `file::String`: The path to the file to be written.
-- `data <: RWLTable`: The Ring-Width-Length table to be written.
+- `data <: TimeArray`: The Ring-Width-Length table to be written.
 
 # Example
 ```
 write("viet001.rwl", viet001_table)
 ```
 """
-function Base.write(file::AbstractString, data::RWLTable; args...)
+function Base.write(file::AbstractString, data::TimeArray; args...)
   ext = splitext(file)[2]
   format = get_format(ext)
   write(format, file, data; args...)

@@ -3,181 +3,236 @@
 # -------------------------------------------------------------------
 # using Crayons
 # using Tables
+# using TimeSeries
 # using PrettyTables
 # using Unitful
 
+
+
+Base.names(rwltable::TimeArray) = colnames(rwltable)
+
 """
-    RWLTable
-
-    A custom table type for holding RWL data.
-    # Fields:
-    # - `years::Vector{Int}`: A vector of years corresponding to the rows of the data matrix.
-    # - `data::T`: A matrix or vector holding the RWL data.
-    # - `colnames::Vector{Symbol}`: A vector of symbols representing the names of the columns.
-    # - `lookup::Dict{Symbol,Int}`: A dictionary mapping column names to their respective indices.
+    years(rwltable::TimeArray)
+function to get all years in the TimeArray
 """
-struct RWLTable{T<:AbstractVecOrMat} <: Tables.AbstractColumns
-  years::Vector{Int}
-  data::T
-  colnames::Vector{Symbol}
-  lookup::Dict{Symbol,Int}
-
-  function RWLTable(matrix::T, years::Vector{Int}, colnames::Vector{Symbol}) where {T}
-    if size(matrix, 1) != length(years)
-      error("Number of rows in matrix must match length of years vector")
-    end
-    if size(matrix, 2) != length(colnames)
-      error("Number of columns in matrix must match length of colnames vector")
-    end
-    new{T}(years, matrix, colnames, Dict(colnames .=> 1:length(colnames)))
-  end
-end
-
-# ----------------------------
-# RWLTable INTERFACE
-# ----------------------------
-# Implementing the Tables.jl interface
-Tables.istable(::Type{<:RWLTable}) = true
-# Getters
-getyears(rwltable::RWLTable) = getfield(rwltable, :years)
-getvalues(rwltable::RWLTable) = getfield(rwltable, :data)
-Base.names(rwltable::RWLTable) = getfield(rwltable, :colnames)
-lookup(rwltable::RWLTable) = getfield(rwltable, :lookup)
-
-years(rwltable::RWLTable) = getyears(rwltable)
-Base.values(rwltable::RWLTable) = getvalues(rwltable)
-
-Tables.schema(rwltable::RWLTable{T}) where {T} = Tables.Schema(names(rwltable), fill(eltype(T), length(names(rwltable))))
-
-Tables.columnaccess(::Type{<:RWLTable}) = true
-Tables.columns(rwltable::RWLTable) = rwltable
-
-Tables.getcolumn(rwltable::RWLTable, ::Type{T}, col::Int, name::Symbol) where {T} = name == :Year ? years(rwltable) : getvalues(rwltable)[:, col]
-Tables.getcolumn(rwltable::RWLTable, name::Symbol) = name == :Year ? years(rwltable) : getvalues(rwltable)[:, lookup(rwltable)[name]]
-Tables.getcolumn(rwltable::RWLTable, i::Int) = i == 1 ? years(rwltable) : getvalues(rwltable)[:, i-1]
-Tables.columnnames(rwltable::RWLTable) = [:Year; names(rwltable)]
-
-
-
-Tables.rowaccess(::Type{<:RWLTable}) = true
-rows(rwltable::RWLTable) = rwltable
-Base.eltype(::Type{RWLTable{T}}) where {T} = RWLRow{T}
-Base.length(rwltable::RWLTable) = length(years(rwltable))
-Base.iterate(rwltable::RWLTable, state=(1, 1)) = state[1] > length(rwltable) ? nothing : ((Tables.getcolumn(rwltable, state[2])[state[1]], (state[1] + 1, state[2])))
-# Iterating over columns
-Base.eachcol(rwltable::RWLTable) = (Tables.getcolumn(rwltable, name) for name in Tables.columnnames(rwltable))
-
-# Iterating over rows
-Base.eachrow(rwltable::RWLTable) = (RWLRow(i, rwltable) for i in 1:Base.length(rwltable))
-
-# Abstract Row
-struct RWLRow{T} <: Tables.AbstractRow
-  row::Int
-  source::RWLTable{T}
-end
-
-Tables.getcolumn(rwltable::RWLRow, ::Type, col::Int, name::Symbol) = getfield(getfield(rwltable, :source), :data)[getfield(rwltable, :row), col]
-@inline function Tables.getcolumn(rwltable::RWLRow, name::Symbol)
-  if name == :Year
-    getfield(getfield(rwltable, :source), :years)[getfield(rwltable, :row)]
-  else
-    getfield(getfield(rwltable, :source), :data)[getfield(rwltable, :row), getfield(getfield(rwltable, :source), :lookup)[name]]
-  end
-end
-Tables.getcolumn(rwltable::RWLRow, i::Int) = getfield(getfield(rwltable, :source), :data)[getfield(rwltable, :row), i]
-Tables.columnnames(rwltable::RWLRow) = names(getfield(rwltable, :source))
-
+years(rwltable::TimeArray) = year.(timestamp(rwltable))
 
 # Equality
-function Base.:(==)(rwltable₁::RWLTable, rwltable₂::RWLTable)
-  # Same years
-  if years(rwltable₁) != years(rwltable₂)
-    return false
-  end
-
-  # Same values
-  vals₁ = values(rwltable₁)
-  vals₂ = values(rwltable₂)
-  if !isequal(vals₁, vals₂)
-    return false
-  end
-
-
-  true
-end
-
-Base.view(rwltable::RWLTable, inds::AbstractVector{Int}) = SubRWLTable(rwltable, inds)
-
-Base.parent(rwltable::RWLTable) = rwltable
-
-Tables.DataAPI.nrow(rwltable::RWLTable) = length(years(rwltable))
-Tables.DataAPI.ncol(rwltable::RWLTable) = length(names(rwltable))
-
-Tables.subset(rwltable::RWLTable, inds::AbstractVector{Int}) = SubRWLTable(rwltable, inds)
+Tables.DataAPI.nrow(rwltable::TimeArray) = length(years(rwltable))
+Tables.DataAPI.ncol(rwltable::TimeArray) = length(names(rwltable))
 
 # IO Methods
-function Base.summary(io::IO, rwltable::RWLTable)
-  yr = extrema(years(rwltable))
-  name = nameof(typeof(rwltable))
-  print(io, "$(Tables.DataAPI.ncol((rwltable))) series $name over years: $yr")
-end
+function describe(rwltable::TimeArray; small_thresh=nothing, big_thresh=nothing)
 
-function Base.show(io::IO, ::MIME"text/plain", rwltable::RWLTable)
-  fcolor = crayon"bold light_cyan"
-  gcolor = crayon"bold light_magenta"
-  hcolors = [gcolor; fill(fcolor, length(names(rwltable)))]
-  pretty_table(
-    io,
-    # hcat(years(rwltable), reduce(hcat, values(rwltable)));
-    rwltable;
-    backend=Val(:text),
-    _common_kwargs(rwltable)...,
-    header_crayon=hcolors,
-    newline_at_end=false
-  )
-end
+  # main summary
+  statistics = _summary(rwltable)
+  num_series = Tables.DataAPI.ncol(rwltable)
+  n = sum(statistics[:last] .- statistics[:first])
+  μₛ = mean(statistics[:year])
+  first = minimum(statistics[:first])
+  last = maximum(statistics[:last])
+  μₐ = mean(statistics[:ar1])
+  stdₐ = std(statistics[:ar1])
 
-function Base.show(io::IO, ::MIME"text/html", rwltable::RWLTable)
-  pretty_table(io, Tables.columns(rwltable); backend=Val(:html), max_num_of_rows=10)
-end
+  # unconnected spands
+  naRowSum = map(row -> sum(row -> row == 0, row), eachrow(values(rwltable)))
+  unconnectedFlag = naRowSum .== num_series
+  unconnected = any(unconnectedFlag)
+  unconnectedYrs = years(rwltable)[findall(unconnectedFlag)]
+
+  # missing rings
+  zedsLogical = isnan.(values(rwltable))
+  nZeros = count(==(true), zedsLogical)
+  zeds = [findall(==(true), zedsLogical[:, i]) for i in 1:size(zedsLogical, 2)]
+  zeds = [years(rwltable)[z] for z in zeds if !isempty(z)]
+  zeros = isempty(zeds) ? Int[] : zeds
+
+  samps = sum(.!isnan.(values(rwltable)), dims=2)
+  pctSeriesZero = sum(zedsLogical, dims=2) ./ samps
+  allZeroYears = findall(==(1), pctSeriesZero)
+
+  function consecutiveZerosVec(x)
+    run_values, run_lengths = collect(rle(isnan.(x)))
+
+    consecutive_zeros_indices = findall(x -> x[1] && x[2] >= 1, collect(zip(run_values, run_lengths)))
+    # remove the leading trues
+    if run_values[1]
+      popfirst!(consecutive_zeros_indices)
+    end
+    # remove trailing true
+    if run_values[end]
+      pop!(consecutive_zeros_indices)
+    end
+
+    consecutive_zeros_logical = falses(length(x))
+    for i in consecutive_zeros_indices
+      consecutive_zeros_logical[(sum(run_lengths[1:(i-1)])+1):(sum(run_lengths[1:i]))] .= true
+    end
+    consecutive_zeros_logical
+  end
+
+  consecutiveZerosLogical = [consecutiveZerosVec(values(rwltable)[:, i]) for i in 1:size(values(rwltable), 2)]
 
 
-function _common_kwargs(rwltable::RWLTable)
-  years = getyears(rwltable)
-  values = getvalues(rwltable)
-  colnames = names(rwltable)
+  # get years from indices
+  consecutiveZerosLogicalList = [findall(x -> x, consecutiveZerosLogical[i]) for i in 1:length(consecutiveZerosLogical)]
+  # get years from names instead of indices
+  consecutiveZerosLogicalList = [years(rwltable)[x] for x in consecutiveZerosLogicalList]
 
-  # header
-  header = [:Year, colnames...]
-  tuples = map(header) do name
-    if name == :Year
-      header₁ = name
-      header₂ = "[Year]"
+  statistics[:consecutiveZeros] = consecutiveZerosLogicalList
+
+
+  # ρ, _ = _corinterseries(rwltable)
+  # meanInterSeriesCor = mean(ρ)
+  # sdInterSeriesCor = std(ρ)
+
+  internalNAs = [findall(val -> isnan(val), values(rwltable)[:, i]) for i in 1:size(values(rwltable), 2)]
+  internalNAs = [years(rwltable)[na] for na in internalNAs if !isempty(na)]
+  internalNAs = isempty(internalNAs) ? Int[] : internalNAs
+
+  smallRings = if isnothing(small_thresh)
+    Int[]
+  else
+    smallRings = [findall(x -> x > 0 && x < small_thresh, values(rwltable)[:, i]) for i in 1:size(values(rwltable), 2)]
+    smallRings = [years(rwltable)[sr] for sr in smallRings if !isempty(sr)]
+    isempty(smallRings) ? Int[] : smallRings
+  end
+
+  bigRings = if isnothing(big_thresh)
+    Int[]
+  else
+    bigRings = [findall(x -> x > big_thresh, values(rwltable)[:, i]) for i in 1:size(values(rwltable), 2)]
+    bigRings = [years(rwltable)[br] for br in bigRings if !isempty(br)]
+    isempty(bigRings) ? Int[] : bigRings
+  end
+
+  println("## Number of dated series: $num_series")
+  println("## Number of measurements: $n")
+  println("## Avg series length: $μₛ")
+  println("## Range: $(last - first + 1)")
+  println("## Span: $(first) - $(last)")
+  # println("## Mean (Std dev) series intercorrelation: $(round(meanInterSeriesCor, digits=3)) ($(round(sdInterSeriesCor, digits=3)))")
+  println("## Mean (Std dev) AR1: $(round(μₐ, digits=3)) ($(round(stdₐ, digits=3)))")
+  println("## -------------")
+  println("## Years where all rings are missing (NA)")
+  if isempty(allZeroYears)
+    println("##     None")
+  else
+    println("##Warning: Having years with all zeros is atypical (but not unheard of).")
+    println("$(join([idx[1] for idx in allZeroYears] .+ first, "\n"))")
+  end
+  println("## -------------")
+  println("## Years with consecutive absent rings listed by series")
+  if isempty(statistics[:consecutiveZeros])
+    println("##     None")
+  else
+    for (i, series) in enumerate(names(rwltable))
+      tmp = statistics[:consecutiveZeros][i]
+      if isempty(tmp)
+        continue
+      end
+      println("##     Series $series -- $(join(tmp, " "))")
+    end
+    # percent absent rings
+    sumAbsent = sum(length, consecutiveZerosLogicalList)
+    pctAbsent = round(sumAbsent / n * 100, digits=2)
+
+    println("## $sumAbsent absent rings ($pctAbsent%)")
+
+  end
+
+
+  println("## -------------")
+  if !isnothing(small_thresh)
+    println("## -------------")
+    println("## Years with values < $small_thresh listed by series")
+    if isempty(smallRings)
+      println("##     None")
     else
-      x = Tables.getcolumn(rwltable, name)
-      T = eltype(x)
-      if T <: Missing
-        header₁ = "Missing"
-        header₂ = "[NoUnits]"
-      else
-        S = nonmissingtype(T)
-        header₁ = string(name)
-        header₂ = S <: Unitful.AbstractQuantity ? "[$(unit(S))]" : "[NoUnits]"
+      for (i, series) in enumerate(names(rwltable))
+        tmp = smallRings[i]
+        if isempty(tmp)
+          continue
+        end
+        println("##     Series $series -- $(join(tmp, " "))")
       end
     end
-    header₁, header₂
   end
-  subheader₁ = first.(tuples)
-  subheader₂ = last.(tuples)
 
-  (title=summary(rwltable),
-    header=(subheader₁, subheader₂),
-    alignment=:c,
-    vcrop_mode=:middle,
-    # max_num_of_columns=5,
-    display_size=(15, 80),
-    crop=:both
+  if !isnothing(big_thresh)
+    println("## -------------")
+    println("## Years with values > $big_thresh listed by series")
+    if isempty(bigRings)
+      println("##     None")
+    else
+      for (i, series) in enumerate(names(rwltable))
+        tmp = bigRings[i]
+        if isempty(tmp)
+          continue
+        end
+        println("##     Series $series -- $(join(tmp, " "))")
+      end
+    end
+  end
+end
+
+@inline function Base.first(rwltable::TimeArray, n::Int)
+  view(rwltable, 1:n)
+end
+
+@inline function Base.last(rwltable::TimeArray, n::Int)
+  view(rwltable, (length(rwltable)-n+1):length)
+end
+
+
+### HELPERS ###
+# using StatsBase
+
+function _summary(rwltable)
+  acf1(x) = autocor(x, [1])[1]
+  yr = years(rwltable)
+  rwl₂ = values(rwltable)
+  yrᵣ = [_yearrange(rwltable, colname) for colname in Tables.columnnames(rwltable)[2:end]]
+  first = [r[1] for r in yrᵣ]
+  last = [r[2] for r in yrᵣ]
+  rangeᵣ = last .- first .+ 1
+  μ = round.(mean(!isnan, rwl₂, dims=1), digits=3)
+  η = round.([median(rwl₂[.!isnan.(rwl₂[:, i]), i]) for i in 1:size(rwl₂, 2)], digits=3)
+  σ = round.([std(rwl₂[.!isnan.(rwl₂[:, i]), i]) for i in 1:size(rwl₂, 2)], digits=3)
+  skewₛ = round.([skewness(rwl₂[.!isnan.(rwl₂[:, i]), i]) for i in 1:size(rwl₂, 2)], digits=3)
+  kurtosisₛ = round.([kurtosis(rwl₂[.!isnan.(rwl₂[:, i]), i]) for i in 1:size(rwl₂, 2)], digits=3)
+  gini = round.([_gini(rwl₂[.!isnan.(rwl₂[:, i]), i]) for i in 1:size(rwl₂, 2)], digits=3)
+  ar1 = round.([acf1(rwl₂[.!isnan.(rwl₂[:, i]), i]) for i in 1:size(rwl₂, 2)], digits=3)
+  Dict(
+    :first => first,
+    :last => last,
+    :year => rangeᵣ,
+    :mean => μ,
+    :median => η,
+    :std => σ,
+    :skewness => skewₛ,
+    :kurtosis => kurtosisₛ,
+    :gini => gini,
+    :ar1 => ar1
   )
 
 
+end
+
+function _gini(x)
+  n = length(x)
+  sum = 0
+  for i in 1:n
+    for j in 1:n
+      sum += abs(x[i] - x[j])
+    end
+  end
+  return sum / (2 * n^2 * mean(x))
+end
+
+function _yearrange(rwltable, series)
+  allyears = years(rwltable)
+  data = values(rwltable[:, series]) |> vec
+  valid_years = allyears[.!isnan.(data)]
+  return extrema(valid_years)
 end

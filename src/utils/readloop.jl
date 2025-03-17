@@ -1,3 +1,6 @@
+# -------------------------------------------------------------------
+# Licensed under the GPL-3.0 License. See LICENSE in the project root.
+# -------------------------------------------------------------------
 # using Unitful
 
 function readloop(series_index::Vector{Int}, decade::Vector{Int}, x::Matrix{I}) where {I<:Integer}

@@ -12,6 +12,7 @@ using TestItemRunner
   using Random
   using PrettyTables
   using Tables
+  using TimeSeries
 
   # environment settings
   isCI = "CI" ∈ keys(ENV)

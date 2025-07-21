@@ -1,28 +1,22 @@
 # -------------------------------------------------------------------
 # Licensed under the GPL-3.0 License. See LICENSE in the project root.
 # -------------------------------------------------------------------
-# using Crayons
-# using Tables
-# using TimeSeries
-# using PrettyTables
-# using Unitful
 
 
-
-Base.names(rwltable::TimeArray) = colnames(rwltable)
+@stable Base.names(rwltable::TimeArray) = colnames(rwltable)
 
 """
     years(rwltable::TimeArray)
 function to get all years in the TimeArray
 """
-years(rwltable::TimeArray) = year.(timestamp(rwltable))
+@stable years(rwltable::TimeArray) = year.(timestamp(rwltable))
 
 # Equality
 Tables.DataAPI.nrow(rwltable::TimeArray) = length(years(rwltable))
 Tables.DataAPI.ncol(rwltable::TimeArray) = length(names(rwltable))
 
 # IO Methods
-function describe(rwltable::TimeArray; small_thresh=nothing, big_thresh=nothing)
+@stable function dendrostats(rwltable::TimeArray; small_thresh=nothing, big_thresh=nothing)
 
   # main summary
   statistics = _summary(rwltable)
@@ -82,9 +76,9 @@ function describe(rwltable::TimeArray; small_thresh=nothing, big_thresh=nothing)
   statistics[:consecutiveZeros] = consecutiveZerosLogicalList
 
 
-  # ρ, _ = _corinterseries(rwltable)
-  # meanInterSeriesCor = mean(ρ)
-  # sdInterSeriesCor = std(ρ)
+  ρ, _ = _corinterseries(rwltable)
+  meanInterSeriesCor = mean(ρ[.!isnan.(ρ)])
+  sdInterSeriesCor = std(ρ[.!isnan.(ρ)])
 
   internalNAs = [findall(val -> isnan(val), values(rwltable)[:, i]) for i in 1:size(values(rwltable), 2)]
   internalNAs = [years(rwltable)[na] for na in internalNAs if !isempty(na)]
@@ -111,14 +105,14 @@ function describe(rwltable::TimeArray; small_thresh=nothing, big_thresh=nothing)
   println("## Avg series length: $μₛ")
   println("## Range: $(last - first + 1)")
   println("## Span: $(first) - $(last)")
-  # println("## Mean (Std dev) series intercorrelation: $(round(meanInterSeriesCor, digits=3)) ($(round(sdInterSeriesCor, digits=3)))")
+  println("## Mean (Std dev) series intercorrelation: $(round(meanInterSeriesCor, digits=3)) ($(round(sdInterSeriesCor, digits=3)))")
   println("## Mean (Std dev) AR1: $(round(μₐ, digits=3)) ($(round(stdₐ, digits=3)))")
   println("## -------------")
   println("## Years where all rings are missing (NA)")
   if isempty(allZeroYears)
     println("##     None")
   else
-    println("##Warning: Having years with all zeros is atypical (but not unheard of).")
+    println("## Warning: Having years with all zeros is atypical (but not unheard of).")
     println("$(join([idx[1] for idx in allZeroYears] .+ first, "\n"))")
   end
   println("## -------------")
@@ -176,11 +170,11 @@ function describe(rwltable::TimeArray; small_thresh=nothing, big_thresh=nothing)
   end
 end
 
-@inline function Base.first(rwltable::TimeArray, n::Int)
+@stable function Base.first(rwltable::TimeArray, n::Int)
   view(rwltable, 1:n)
 end
 
-@inline function Base.last(rwltable::TimeArray, n::Int)
+@stable function Base.last(rwltable::TimeArray, n::Int)
   view(rwltable, (length(rwltable)-n+1):length)
 end
 

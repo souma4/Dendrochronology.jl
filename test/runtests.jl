@@ -4,15 +4,23 @@ using TestItemRunner
 @run_package_tests
 
 @testsnippet Setup begin
-  using Crayons
   using CSV
+  using Dendrochronology
+  using DSP: conv
   using Dates
+  using HypothesisTests: CorrelationTest, pvalue
+  using LinearAlgebra: dot, cholesky, qr
+  using MultivariateStats
   using Printf
-  using Unitful
+  using RCall
   using Random
-  using PrettyTables
   using Tables
+  using StatsBase
+  using StatsModels
   using TimeSeries
+  using Unitful
+
+
 
   # environment settings
   isCI = "CI" ∈ keys(ENV)

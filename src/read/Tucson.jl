@@ -182,9 +182,9 @@ function Base.read(ftype::Tucson, fname::String; header::Union{Nothing,Bool}=not
     decade_yr = [parse(Int, row[2]) for row in dat]
     x = [ismissing.(row[j]) ? NA_INT : parse(Int, row[j]) for row in dat, j in 3:12]
     if edge_zeros
-      x[isNA_INT.(x).&&(x.<0 .& x.!=-9999)] .= NA_INT
+      x[isNA_INT.(x).&&(x.<Int64(0).&x.!=Int64(-9999))] .= NA_INT
     else
-      x[isNA_INT.(x).&&(x.<=0 .& x.!=-9999)] .= NA_INT
+      x[isNA_INT.(x).&&(x.<=Int64(0).&x.!=Int64(-9999))] .= NA_INT
     end
     fixed_ok = input_ok(series, decade_yr, x)
   else
@@ -242,9 +242,9 @@ function Base.read(ftype::Tucson, fname::String; header::Union{Nothing,Bool}=not
     end
     this_prec_rproc = prec_rproc[i]
     if this_prec_rproc == 100
-      int_mat[int_mat[:, i].==999, i] .= NA_INT
+      int_mat[int_mat[:, i].==Int64(999), i] .= NA_INT
     elseif this_prec_rproc == 1000
-      int_mat[int_mat[:, i].==-9999, i] .= NA_INT
+      int_mat[int_mat[:, i].==Int64(-9999), i] .= NA_INT
     else
       prec_unknown[i] = true
     end
@@ -322,7 +322,7 @@ function Base.read(ftype::Tucson, fname::String; header::Union{Nothing,Bool}=not
   end
 
   incl_rows = (minimum(series_min[good_series])):(maximum(series_max[good_series]))
-  rw_mat = rw_mat[incl_rows, :]
+  rw_mat = convert(Matrix{Float32}, rw_mat[incl_rows, :])
 
   Years = collect(incl_rows .+ min_year .- 1)
   TimeArray(Date.(Years), rw_mat, Symbol.(series_ids))

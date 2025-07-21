@@ -164,7 +164,7 @@ function _csv2rwl(fname, kwargs...)
       end
     end
 
-    TimeArray(Date.(rownames), matrix, colnames[2:end])
+    TimeArray(Date.(rownames), convert(Matrix{Float32}, matrix), colnames[2:end])
   end
 end
 

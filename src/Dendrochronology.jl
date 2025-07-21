@@ -3,29 +3,34 @@
 # -------------------------------------------------------------------
 module Dendrochronology
 
-using Crayons
 using CSV
-using Dates
-using Printf
-using Unitful
-using Random
-using PrettyTables
-using Tables
-using TimeSeries
-using StatsBase
-using IterTools
+using DispatchDoctor
 using DSP: conv
+using Dates
 using HypothesisTests: CorrelationTest, pvalue
 using LinearAlgebra: dot, cholesky, qr
-# Write your package code here.
-include("dendrotable.jl")
-# include("operations.jl")
-include("utils.jl")
-include("read.jl")
-include("write.jl")
+using MultivariateStats
+using Printf
+using RCall
+using Random
+using Tables
+using StatsBase
+using StatsModels
+using TimeSeries
+using Unitful
+
+@stable default_mode = "disable" begin
+  include("utils.jl")
+  include("operations.jl")
+  include("dendrotable.jl")
+  include("read.jl")
+  include("write.jl")
+end
 
 # TimeArray and notable methods
-export TimeArray, years, values, names, colnames, timestamp, meta
+export TimeArray, years, values, names, colnames, timestamp, meta,
+  dendrostats
+
 
 
 
